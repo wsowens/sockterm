@@ -1,0 +1,87 @@
+h1, p {
+    font-family: sans-serif;
+}
+
+.term-outer {
+    /* for centering the term-inner */
+    display: flex;
+    width: 100%;
+    justify-content: center;
+
+    /* for debugging */
+    border: solid black;
+}
+
+.term {
+    /* for centering the term elements */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+
+    /* allow the user to resize the terminal at will */
+    resize: both;
+    overflow: hidden;
+
+    /* establish the font for measurement purposes */
+    font-size: x-large;
+    font-family: monospace;
+
+    /* default widths and height */
+    min-width: 80ch;
+    width: 80ch;   /* 80 characters is a standard with */
+    height: 60ch;  /* for that nice 4:3 resolution :) */
+}
+
+.term-element {
+    /* establish the font */
+    font-family: inherit;
+    font-size: inherit;
+    width: 100%;
+}
+
+.term-input, .term-output {
+    width: 100%;
+
+    /* inherit the font from above */
+    font-size: inherit;
+    font-family: inherit;
+
+    /* nice dark theme colors */
+    background-color: rgb(30, 30, 30);
+    color: rgb(204, 204, 204);
+    white-space: pre-wrap; /*wrap-lines, but preserve lines and spaces/tabs */
+}
+
+/* establishing height and dimensions */
+.term-input {
+    /* term-input is kept at about 1 line */
+    resize: none;
+    height: 2.0em;
+    overflow-y: auto; /* no scrollbar */
+}
+
+.term-output {
+    height: 100%;
+    overflow: hidden scroll;
+    overflow-wrap: break-word;
+    
+    /* philosophy on the scrollbar: make only the 'thumb' visible...
+the track should take on the same color as the rest */
+
+    /* scrollbar support for Firefox */
+    scrollbar-color: rgb(60, 60, 60) rgb(30, 30, 30);
+}
+
+/* support for Chrome et al. */
+.term-output::-webkit-scrollbar {
+    width: 1.5ch;
+}
+
+.term-output::-webkit-scrollbar-track {
+    background-color: rgb(30, 30, 30); 
+}
+
+.term-output::-webkit-scrollbar-thumb {
+    background-color: rgb(60, 60, 60);
+}

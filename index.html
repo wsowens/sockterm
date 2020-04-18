@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="term.css">
+  <link
+  rel="stylesheet"
+  href="https://unpkg.com/simplebar@latest/dist/simplebar.css"
+  />
+  <script src="https://unpkg.com/simplebar@latest/dist/simplebar.min.js"></script>
+</head>
+<body>
+  <h1>Welcome to WebTerm</h1>
+  <div class="term-outer">
+    <div class="term">
+      <!--
+      <div class="term-element">
+        <textarea id="text-output" class="term-output" readonly="true" rows=10 cols=80>
+  Welcome to WebTerm!
+</textarea>
+      </div>
+      -->
+      <div class="term-element" style="height: calc(100% - 2.0em);"> 
+        <div id="text-output" class="term-output"> Welcome to WebTerm!
+          In the end...
+We will all suffer...
+          trees.. 
+          in 
+    the
+      night
+</div>
+      </div>
+      <div class="term-element">
+      <textarea id="text-input" class="term-input" spellcheck="textarea" placeholder="Type a command here. Press [Enter] to submit."></textarea>
+      </div>
+    </div>
+  </div>
+  <script>
+    const PS1 = ""
+    termOutput = document.getElementById("text-output")
+    textInput = document.getElementById("text-input");
+    textInput.value = PS1;
+
+    textInput.addEventListener("keypress", (event) => {
+        /* enter = submit */
+        if (event.which === 13 && !event.shiftKey) {
+          console.log(textInput.value);
+          // add text to div
+          termOutput.innerText += textInput.value.slice(PS1.length) + "\n";
+          // scroll programmatically after firing an event
+          termOutput.scrollTop = termOutput.scrollHeight - termOutput.clientHeight
+          textInput.value = PS1;
+          event.preventDefault();
+        }
+      });
+  </script>
+</body>
+</html>

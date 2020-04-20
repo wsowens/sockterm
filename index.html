@@ -21,13 +21,7 @@
       </div>
       -->
       <div class="term-element" style="height: calc(100% - 2.0em);"> 
-        <div id="text-output" class="term-output"> Welcome to WebTerm!
-          In the end...
-We will all suffer...
-          trees.. 
-          in 
-    the
-      night
+        <div id="text-output" class="term-output">Welcome to WebTerm!
 </div>
       </div>
       <div class="term-element">
@@ -35,7 +29,7 @@ We will all suffer...
       </div>
     </div>
   </div>
-  <script>
+  <script src="term.js">
     const PS1 = ""
     termOutput = document.getElementById("text-output")
     textInput = document.getElementById("text-input");
@@ -44,15 +38,19 @@ We will all suffer...
     textInput.addEventListener("keypress", (event) => {
         /* enter = submit */
         if (event.which === 13 && !event.shiftKey) {
-          console.log(textInput.value);
-          // add text to div
-          termOutput.innerText += textInput.value.slice(PS1.length) + "\n";
-          // scroll programmatically after firing an event
-          termOutput.scrollTop = termOutput.scrollHeight - termOutput.clientHeight
-          textInput.value = PS1;
-          event.preventDefault();
+            console.log(textInput.value);
+            // add text to div
+            socket.send(textInput.value.slice(PS1.length));
+            // scroll programmatically after firing an event
+            termOutput.scrollTop = termOutput.scrollHeight - termOutput.clientHeight
+            textInput.value = PS1;
+            event.preventDefault();
         }
-      });
+    });
+
+    function output(text) {
+        termOutput.innerText += text
+    }
   </script>
 </body>
 </html>

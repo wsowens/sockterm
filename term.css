@@ -1,6 +1,51 @@
-h1, p {
+h1, h2, p {
     font-family: sans-serif;
 }
+
+a {
+    font-family: sans-serif;
+    text-decoration: none;
+    font-size: x-large;
+    font-weight: bold;
+    color: #268bd2;
+}
+
+
+
+#navbar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-evenly;
+}
+
+#themes {
+    display: flex;
+    align-items: inherit;
+    justify-content: space-evenly;
+    width: 80%
+}
+
+#term-url-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background-color: blue;
+    color: white;
+    padding: 0 1%;
+    font-family: 'MS Reference Sans Serif';
+    font-size: small;
+}
+
+#term-url-input {
+    background-color: inherit;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    border: none;
+    width: 60%;
+}
+
+/*-------everything below this line is finalized */
 
 .term-outer {
     /* for centering the term-inner */
@@ -9,7 +54,7 @@ h1, p {
     justify-content: center;
 
     /* for debugging */
-    border: solid black;
+    /*border: dashed black;*/
 }
 
 .term {
@@ -26,6 +71,8 @@ h1, p {
     /* establish the font for measurement purposes */
     font-size: x-large;
     font-family: monospace;
+    
+    padding-left: 1em; /* fix chacters getting cut off */
 
     /* default widths and height */
     min-width: 80ch;
@@ -40,7 +87,7 @@ h1, p {
     width: 100%;
 }
 
-.term-input, .term-output {
+#term-input, #term-output {
     width: 100%;
 
     /* inherit the font from above */
@@ -54,14 +101,14 @@ h1, p {
 }
 
 /* establishing height and dimensions */
-.term-input {
+#term-input {
     /* term-input is kept at about 1 line */
     resize: none;
     height: 2.0em;
     overflow-y: auto; /* no scrollbar */
 }
 
-.term-output {
+#term-output {
     height: 100%;
     overflow: hidden scroll;
     overflow-wrap: break-word;
@@ -74,14 +121,14 @@ the track should take on the same color as the rest */
 }
 
 /* support for Chrome et al. */
-.term-output::-webkit-scrollbar {
+#term-output::-webkit-scrollbar {
     width: 1.5ch;
 }
 
-.term-output::-webkit-scrollbar-track {
+#term-output::-webkit-scrollbar-track {
     background-color: rgb(30, 30, 30); 
 }
 
-.term-output::-webkit-scrollbar-thumb {
+#term-output::-webkit-scrollbar-thumb {
     background-color: rgb(60, 60, 60);
 }

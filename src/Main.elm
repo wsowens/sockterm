@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Html exposing (div, h1, h2, a, textarea, text)
@@ -20,37 +20,73 @@ main =
     , onUrlRequest = LinkClick
     }
 
+
+-- PORTS
+
+port connectSocket : String -> Cmd msg
+port writeSocket : String -> Cmd msg
+
+port openSocket : (() -> msg) -> Sub msg
+port msgSocket : (String -> msg) -> Sub msg
+port closeSocket : (Int -> msg) -> Sub msg
+
+
 -- MODEL
 type alias Model =
   { url : Url.Url
   , key : Nav.Key
   , msgs : List String
+  , status : Connection
   }
 
+type Connection
+  = Open
+  | Connecting
+  | Closed
 
 -- INIT
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init flags url key =
-  ( Model url key [], Cmd.none)
+  ( Model url key [] Closed, Cmd.none)
 
 
 -- UPDATE
 type Msg
-  = Input String
-  | Connect String
+  = UserInput String
+  | UserConnect String
+  | SocketOpen
+  | SocketMsg String
+  | SocketClose String
   | UrlChange Url.Url
   | LinkClick Browser.UrlRequest
+
+{-
+The websock
+-}
 
 update: Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Input s ->
+    UserInput s ->
       -- TODO: scroll!
-      ( { model | msgs = s :: model.msgs },
+      ( { model | msgs = ("< " ++ s) :: model.msgs },
+        writeSocket s
+      )     
+    UserConnect address ->
+      ( { model | msgs = ("Connecting to: [" ++ address ++ "]...") :: model.msgs, status = Connecting },
+        connectSocket address
+      )
+    SocketMsg s ->
+      -- TODO: scroll!
+      ( { model | msgs = ("> " ++ s) :: model.msgs },
         Cmd.none
       )
-    Connect s ->
-      ( { model | msgs = ("connecting to: " ++ s) :: model.msgs },
+    SocketOpen ->
+      ( { model | msgs = "Connected!" :: model.msgs, status = Open },
+        Cmd.none
+      )
+    SocketClose mesg ->
+      ( { model | msgs = mesg :: model.msgs, status = Closed },
         Cmd.none
       )
     LinkClick urlRequest ->
@@ -68,8 +104,20 @@ update msg model =
 
 
 -- SUBSCRIPTIONS
-subscriptions _ = Sub.none
-
+subscriptions _ =
+  Sub.batch
+  [ openSocket (always SocketOpen)
+  , msgSocket SocketMsg
+  , closeSocket socketCode
+  ]
+  
+socketCode : Int -> Msg
+socketCode i =
+  SocketClose (case i of
+    1015 -> "Host not recognized"
+    1006 -> "Connection closed"
+    _ -> "Unknown error " ++ (String.fromInt i)
+  )
 
 -- VIEW
 themes : List (Html.Html msg)
@@ -102,8 +150,11 @@ view model =
       [ div [ class "term" ] 
         [ div [ class "term-element"]
           [ div [id "term-url-bar"] 
-            [ text "Connected to:", Html.input [id "term-url-input", handleTermUrl, Attr.placeholder "ws://enter-server-here.com"] [] ] ]
-        , div [ class "term-element", Attr.style "height" "calc(100% - 2.5em)" ]
+            [ text "Connected to:"
+            , Html.input [id "term-url-input", handleTermUrl, Attr.placeholder "ws://enter-server-here.com"] []
+            , statusIcon model.status ] 
+          ]
+        , div [ class "term-element", Attr.style "flex-grow" "1"  ]
           -- TODO: MAKE SURE THAT LIST.REVERSE PERFORMANCE IS ACCEPTABLE
           [ div [ id "term-output"] [ text "Welcome to WebTerm!\n", model.msgs |> List.reverse |> String.join "\n" |> text ] ]
         , div [ class "term-element"] 
@@ -120,14 +171,14 @@ handleTermUrl : Html.Attribute Msg
 handleTermUrl =
   eventDecoder
   |> Decode.andThen checkEnter
-  |> Decode.map (\v -> (Connect (Debug.log "Connecting..." v), False) )
+  |> Decode.map (\v -> (UserConnect v, False) )
   |> Events.stopPropagationOn "keypress"
 
 handleTermInput : Html.Attribute Msg
 handleTermInput =
   eventDecoder 
   |> Decode.andThen checkEnterShift
-  |> Decode.map (\v -> (Input (Debug.log "Propagation stopped..." v), False) )
+  |> Decode.map (\v -> ( UserInput v, False) )
   |> Events.stopPropagationOn "keypress"
 
 
@@ -135,11 +186,11 @@ checkEnterShift: Event -> Decoder String
 checkEnterShift e =
   if e.key == 13 then
     if e.shift then
-      Decode.fail (Debug.log "" "Shift key pressed with enter")
+      Decode.fail "Shift key pressed with enter"
     else
       Events.targetValue
   else
-    Decode.fail (Debug.log "" "Shift key pressed with enter")
+    Decode.fail "Shift key pressed with enter"
 
 
 checkEnter: Event -> Decoder String
@@ -147,7 +198,7 @@ checkEnter e =
   if e.key == 13 then
     Events.targetValue
   else
-    Decode.fail (Debug.log "" "Shift key pressed with enter")
+    Decode.fail "Shift key pressed with enter"
 
 
 type alias Event =
@@ -161,3 +212,10 @@ eventDecoder =
   Decode.map2 Event
     (Decode.field "shiftKey" Decode.bool)
     (Decode.field "keyCode" Decode.int)
+
+statusIcon : Connection -> Html.Html msg
+statusIcon s =
+  case s of
+    Open -> text "[CONNECTED]"
+    Connecting -> text "CONNECTING..."
+    Closed ->  text "[CLOSED]"

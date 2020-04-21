@@ -3,54 +3,63 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="term.css">
-  <link
-  rel="stylesheet"
-  href="https://unpkg.com/simplebar@latest/dist/simplebar.css"
-  />
-  <script src="https://unpkg.com/simplebar@latest/dist/simplebar.min.js"></script>
+  <script src="term.js"></script>
 </head>
 <body>
-  <h1>Welcome to WebTerm</h1>
-  <div class="term-outer">
-    <div class="term">
-      <!--
-      <div class="term-element">
-        <textarea id="text-output" class="term-output" readonly="true" rows=10 cols=80>
-  Welcome to WebTerm!
-</textarea>
-      </div>
-      -->
-      <div class="term-element" style="height: calc(100% - 2.0em);"> 
-        <div id="text-output" class="term-output">Welcome to WebTerm!
-</div>
-      </div>
-      <div class="term-element">
-      <textarea id="text-input" class="term-input" spellcheck="textarea" placeholder="Type a command here. Press [Enter] to submit."></textarea>
-      </div>
-    </div>
-  </div>
-  <script src="term.js">
-    const PS1 = ""
-    termOutput = document.getElementById("text-output")
-    textInput = document.getElementById("text-input");
-    textInput.value = PS1;
+  <script>
+    var app = Elm.Main.init();
+    
+    var socket = null;
 
-    textInput.addEventListener("keypress", (event) => {
-        /* enter = submit */
-        if (event.which === 13 && !event.shiftKey) {
-            console.log(textInput.value);
-            // add text to div
-            socket.send(textInput.value.slice(PS1.length));
-            // scroll programmatically after firing an event
-            termOutput.scrollTop = termOutput.scrollHeight - termOutput.clientHeight
-            textInput.value = PS1;
-            event.preventDefault();
-        }
+    // Handlers for the four events
+    function socketOpen(event) {
+      console.debug(event);
+      app.ports.openSocket.send(null);
+    }
+    function socketMsg(event) {
+      console.debug(event);
+      app.ports.msgSocket.send(event.data);
+    }
+    /*
+    Websockets essentially have no data when an error occurs, just an error event...
+    https://stackoverflow.com/questions/18803971/websocket-onerror-how-to-read-error-description
+    For now, we just log the error in the console, but don't send anything to Elm.
+    */
+    function socketErr(event) {
+      console.error(event);
+    }
+    // from link above, 1006 is basically the only result you will get
+    function socketClose(event) {
+      console.log(event);
+      app.ports.closeSocket.send(event.code);
+    }
+ 
+    
+    function disconnectSocket() {
+      socket.close();
+      socket = null;
+    }
+
+    // Create a new port, `connectSocket`, that connects a socket and sets it up appopriately
+    app.ports.connectSocket.subscribe((address) => {
+      // disconnect socket, if it is open
+      if (socket != null) {
+        disconnectSocket();
+      }
+      socket = new WebSocket(address);
+      // add event handlers
+      socket.addEventListener("open", socketOpen);
+      socket.addEventListener("message", socketMsg);
+      socket.addEventListener("error", socketErr);
+      socket.addEventListener("close", socketClose);
     });
 
-    function output(text) {
-        termOutput.innerText += text
-    }
+    // Create a new port, `writeSocket`, that writes a message to the socket
+    app.ports.writeSocket.subscribe((data) => {
+      socket.send(data);
+    });
+
+    app.ports.writeSocket
   </script>
 </body>
 </html>

@@ -56,10 +56,12 @@
 
     // Create a new port, `writeSocket`, that writes a message to the socket
     app.ports.writeSocket.subscribe((data) => {
-      socket.send(data);
+      if (socket != null) {
+        socket.send(data);
+      }
+      // TODO: handle this specifically
+      // maybe use the "error" port?
     });
-
-    app.ports.writeSocket
   </script>
 </body>
 </html>

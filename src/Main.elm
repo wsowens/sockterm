@@ -60,10 +60,6 @@ type Msg
   | UrlChange Url.Url
   | LinkClick Browser.UrlRequest
 
-{-
-The websock
--}
-
 update: Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
@@ -85,7 +81,7 @@ update msg model =
       ( { model | msgs = "Connected!" :: model.msgs, status = Open },
         Cmd.none
       )
-    SocketClose mesg ->
+    SocketClose mesg -> 
       ( { model | msgs = mesg :: model.msgs, status = Closed },
         Cmd.none
       )
@@ -111,6 +107,7 @@ subscriptions _ =
   , closeSocket socketCode
   ]
   
+
 socketCode : Int -> Msg
 socketCode i =
   SocketClose (case i of
@@ -119,49 +116,28 @@ socketCode i =
     _ -> "Unknown error " ++ (String.fromInt i)
   )
 
+
 -- VIEW
-themes : List (Html.Html msg)
-themes = 
-  Html.h2 [ class "navbar" ] [text "Themes:"] :: themeLinks
-
-
-themeLinks : List (Html.Html msg)
-themeLinks = 
-  List.map themeLink
-  [ ("Blue.", "blue.html")
-  , ("Xp.", "xp.html")
-  , ("Night mode.", "dark.html")
-  ]
-
-
-themeLink : (String, String) -> Html.Html msg
-themeLink (name, link) = a [Attr.href link] [text name]
-
-
 view : Model -> Browser.Document Msg
 view model = 
   { title = "Web Term"
   , body = 
     [ div [ id "navbar" ] 
       [ h1 [] [text "WebTerm."]
-      , div [ id "themes" ] themes 
       ] 
     , div [ class "term-outer"]
       [ div [ class "term" ] 
         [ div [ class "term-element"]
           [ div [id "term-url-bar"] 
             [ text "Connected to:"
-            , Html.input [id "term-url-input", handleTermUrl, Attr.placeholder "ws://enter-server-here.com"] []
+            , Html.input [id "term-url-input", Attr.spellcheck False, 
+                Attr.placeholder "ws://server-domain.com:port", handleTermUrl] []
             , statusIcon model.status ] 
           ]
-        , div [ class "term-element", Attr.style "flex-grow" "1"  ]
-          -- TODO: MAKE SURE THAT LIST.REVERSE PERFORMANCE IS ACCEPTABLE
-          [ div [ id "term-output"] [ text "Welcome to WebTerm!\n", model.msgs |> List.reverse |> String.join "\n" |> text ] ]
-        , div [ class "term-element"] 
-          [ textarea [ id "term-input", Attr.spellcheck False, 
-            Attr.placeholder "Type a command here. Press [Enter] to submit.",
-            handleTermInput, Attr.value "" ] []
-          ]
+        , div [ class "term-element", id "term-output"] [ text "Welcome to WebTerm!\n", model.msgs |> List.reverse |> String.join "\n" |> text ]
+        , textarea [ class "term-element", id "term-input", Attr.spellcheck False, 
+          Attr.placeholder "Type a command here. Press [Enter] to submit.",
+          handleTermInput, Attr.value "" ] []
         ]
       ]
     ]

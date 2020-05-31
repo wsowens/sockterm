@@ -52,9 +52,6 @@ a {
     display: flex;
     width: 100%;
     justify-content: center;
-
-    /* for debugging */
-    /*border: dashed black;*/
 }
 
 .term {
@@ -72,12 +69,16 @@ a {
     font-size: x-large;
     font-family: monospace;
     
-    padding-left: 1em; /* fix chacters getting cut off */
+    padding-left: .01em; /* fix characters getting cut off */
 
-    /* default widths and height */
-    min-width: 80ch;
-    width: 80ch;   /* 80 characters is a standard with */
-    height: 60ch;  /* for that nice 4:3 resolution :) */
+    /* default widths and height 
+      80 characters is a standard with, we budget extra
+      for the padding and the scrollbar
+    */
+    min-width: 82ch;
+    width: 82ch;
+    height: 60.5ch;  /* for that nice 4:3 resolution :) */
+    border: solid blue;
 }
 
 .term-element {
@@ -85,15 +86,10 @@ a {
     font-family: inherit;
     font-size: inherit;
     width: 100%;
+    /* outline: 5px solid red; /* for debugging */
 }
 
 #term-input, #term-output {
-    width: 100%;
-
-    /* inherit the font from above */
-    font-size: inherit;
-    font-family: inherit;
-
     /* nice dark theme colors */
     background-color: rgb(30, 30, 30);
     color: rgb(204, 204, 204);
@@ -102,25 +98,27 @@ a {
 
 /* establishing height and dimensions */
 #term-input {
-    /* term-input is kept at about 1 line */
     resize: none;
-    height: 2.0em;
+    /* term-input is kept at about 1 line */
+    min-height: 2.0em;
+    max-height: 2.0em;
     overflow-y: auto; /* no scrollbar */
 }
 
 #term-output {
-    height: 100%;
     overflow: hidden scroll;
     overflow-wrap: break-word;
+    flex-grow: 1;
     
     /* philosophy on the scrollbar: make only the 'thumb' visible...
 the track should take on the same color as the rest */
 
     /* scrollbar support for Firefox */
-    scrollbar-color: rgb(60, 60, 60) rgb(30, 30, 30);
+    /*scrollbar-color: rgb(60, 60, 60) rgb(30, 30, 30);*/
 }
 
 /* support for Chrome et al. */
+/*
 #term-output::-webkit-scrollbar {
     width: 1.5ch;
 }
@@ -131,4 +129,4 @@ the track should take on the same color as the rest */
 
 #term-output::-webkit-scrollbar-thumb {
     background-color: rgb(60, 60, 60);
-}
+} */

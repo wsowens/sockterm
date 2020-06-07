@@ -89,8 +89,8 @@ a {
 
 #term-input, #term-output {
     /* nice dark theme colors */
-    background-color: #1E1E1E;
     color: #E5E5E5;
+    background-color: #1E1E1E;
     white-space: pre-wrap; /*wrap-lines, but preserve lines and spaces/tabs */
 }
 
@@ -107,51 +107,57 @@ a {
     overflow: hidden scroll;
     overflow-wrap: break-word;
     flex-grow: 1;
-    
-    /* philosophy on the scrollbar: make only the 'thumb' visible...
-the track should take on the same color as the rest */
-
-    /* scrollbar support for Firefox */
-    /*scrollbar-color: rgb(60, 60, 60) rgb(30, 30, 30);*/
 }
 
-/* support for Chrome et al. */
-/*
-#term-output::-webkit-scrollbar {
-    width: 1.5ch;
+/* text decoration classes */
+.term-bold { font-weight: bold; }
+.term-italic { font-style: italic; }
+.term-underline { text-decoration: underline; }
+.term-blink { animation: blinking 1s steps(1, end) infinite; }
+@keyframes blinking {
+    50% { opacity: 0; }
 }
-
-#term-output::-webkit-scrollbar-track {
-    background-color: rgb(30, 30, 30); 
-}
-
-#term-output::-webkit-scrollbar-thumb {
-    background-color: rgb(60, 60, 60);
-} */
-
-
-.term-black {
+/* in case default is selected, we need to swap these colors */
+.term-reverse {
+    background-color: #E5E5E5;
     color: #1E1E1E;
 }
-.term-red {
-    color: #CD3131;
-}
-.term-green {
-    color: #0DBC79;
-}
-.term-yellow {
-    color: #E5E510;
-}
-.term-blue {
-    color: #2472C8;
-}
-.term-magenta {
-    color: #BC3FBC;
-}
-.term-cyan {
-    color: #11A8CD;
-}
-.term-white {
-    color: #E5E5E5;
-}
+.term-strike { text-decoration: line-through; }
+/* extra class since term-underline and term-strike cannot stack */
+.term-underline-strike { text-decoration: underline line-through; }
 
+/* foreground colors */
+.term-black   { color: #1E1E1E; }
+.term-red     { color: #CD3131; }
+.term-green   { color: #0DBC79; }
+.term-yellow  { color: #E5E510; }
+.term-blue    { color: #2472C8; }
+.term-magenta { color: #BC3FBC; }
+.term-cyan    { color: #11A8CD; }
+.term-white   { color: #E5E5E5; }
+.term-bright-black   { color: #666666; }
+.term-bright-red     { color: #F14C4C; }
+.term-bright-green   { color: #23D18B; }
+.term-bright-yellow  { color: #F5F543; }
+.term-bright-blue    { color: #3B8EEA; }
+.term-bright-magenta { color: #D670D6; }
+.term-bright-cyan    { color: #29B8DB; }
+.term-bright-white   { color: #E5E5E5; }
+
+/* background colors */
+.term-black-bg   { background-color: #1E1E1E; }
+.term-red-bg     { background-color: #CD3131; }
+.term-green-bg   { background-color: #0DBC79; }
+.term-yellow-bg  { background-color: #E5E510; }
+.term-blue-bg    { background-color: #2472C8; }
+.term-magenta-bg { background-color: #BC3FBC; }
+.term-cyan-bg    { background-color: #11A8CD; }
+.term-white-bg   { background-color: #E5E5E5; }
+.term-bright-black-bg   { background-color: #666666; }
+.term-bright-red-bg     { background-color: #F14C4C; }
+.term-bright-green-bg   { background-color: #23D18B; }
+.term-bright-yellow-bg  { background-color: #F5F543; }
+.term-bright-blue-bg    { background-color: #3B8EEA; }
+.term-bright-magenta-bg { background-color: #D670D6; }
+.term-bright-cyan-bg    { background-color: #29B8DB; }
+.term-bright-white-bg   { background-color: #E5E5E5; }

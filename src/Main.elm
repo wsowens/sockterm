@@ -132,7 +132,7 @@ view model =
   { title = "Web Term"
   , body = 
     [ div [ id "navbar" ] 
-      [ h1 [] [text "WebTerm."]
+      [ h1 [class "term-underline-crossedout" ] [text "WebTerm."]
       ] 
     , div [ class "term-outer"]
       [ div [ class "term" ] 

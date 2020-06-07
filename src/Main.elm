@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import Array
 import Browser
 import Html exposing (div, h1, h2, a, textarea, text)
 import Html.Attributes as Attr exposing (class, id)
@@ -7,6 +8,8 @@ import Html.Events as Events
 import Json.Decode as Decode exposing (Decoder)
 import Browser.Navigation as Nav
 import Url
+
+import Color
 
 -- MAIN
 
@@ -35,8 +38,9 @@ port closeSocket : (Int -> msg) -> Sub msg
 type alias Model =
   { url : Url.Url
   , key : Nav.Key
-  , msgs : List String
+  , msgs : Array.Array (Html.Html Msg)
   , status : Connection
+  , format : Maybe Color.Format
   }
 
 type Connection
@@ -47,7 +51,7 @@ type Connection
 -- INIT
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init flags url key =
-  ( Model url key [] Closed, Cmd.none)
+  ( Model url key Array.empty Closed (Just Color.defaultFormat), Cmd.none)
 
 
 -- UPDATE
@@ -65,24 +69,29 @@ update msg model =
   case msg of
     UserInput s ->
       -- TODO: scroll!
-      ( { model | msgs = ("< " ++ s) :: model.msgs },
-        writeSocket s
+      let usermsg = s ++ "\n" in
+      ( { model | msgs = Array.push (text <| "< " ++ usermsg) model.msgs },
+        writeSocket usermsg
       )     
     UserConnect address ->
-      ( { model | msgs = ("Connecting to: [" ++ address ++ "]...") :: model.msgs, status = Connecting },
+      ( { model | msgs = Array.push (text <| "Connecting to: [" ++ address ++ "]...\n")  model.msgs, status = Connecting },
         connectSocket address
       )
-    SocketMsg s ->
+    SocketMsg message ->
       -- TODO: scroll!
-      ( { model | msgs = ("> " ++ s) :: model.msgs },
+      let
+          (newFormat, msgs) = (Color.parseANSIwithError model.format message)
+          newMsgs = Array.append model.msgs (Array.fromList msgs)
+      in
+      ( { model | msgs = newMsgs, format = newFormat},
         Cmd.none
       )
     SocketOpen ->
-      ( { model | msgs = "Connected!" :: model.msgs, status = Open },
+      ( { model | msgs = Array.push (text "Connected!\n")  model.msgs, status = Open },
         Cmd.none
       )
     SocketClose mesg -> 
-      ( { model | msgs = mesg :: model.msgs, status = Closed },
+      ( { model | msgs = Array.push (text <| mesg ++ "\n") model.msgs, status = Closed },
         Cmd.none
       )
     LinkClick urlRequest ->
@@ -134,7 +143,7 @@ view model =
                 Attr.placeholder "ws://server-domain.com:port", handleTermUrl] []
             , statusIcon model.status ] 
           ]
-        , div [ class "term-element", id "term-output"] [ text "Welcome to WebTerm!\n", model.msgs |> List.reverse |> String.join "\n" |> text ]
+        , div [ class "term-element", id "term-output"] (Array.toList model.msgs)
         , textarea [ class "term-element", id "term-input", Attr.spellcheck False, 
           Attr.placeholder "Type a command here. Press [Enter] to submit.",
           handleTermInput, Attr.value "" ] []
@@ -142,6 +151,10 @@ view model =
       ]
     ]
   }
+
+viewMessages : List String -> List (Html.Html Msg)
+viewMessages msgs =
+  msgs |> List.reverse |> List.map ( (++) "\n" ) |> List.map text 
 
 handleTermUrl : Html.Attribute Msg
 handleTermUrl =

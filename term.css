@@ -10,8 +10,6 @@ a {
     color: #268bd2;
 }
 
-
-
 #navbar {
     display: flex;
     align-items: baseline;
@@ -29,8 +27,8 @@ a {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    background-color: blue;
-    color: white;
+    background-color: #2472C8;
+    color: #E5E5E5;
     padding: 0 1%;
     font-family: 'MS Reference Sans Serif';
     font-size: small;
@@ -91,8 +89,8 @@ a {
 
 #term-input, #term-output {
     /* nice dark theme colors */
-    background-color: rgb(30, 30, 30);
-    color: rgb(204, 204, 204);
+    background-color: #1E1E1E;
+    color: #E5E5E5;
     white-space: pre-wrap; /*wrap-lines, but preserve lines and spaces/tabs */
 }
 
@@ -130,3 +128,30 @@ the track should take on the same color as the rest */
 #term-output::-webkit-scrollbar-thumb {
     background-color: rgb(60, 60, 60);
 } */
+
+
+.term-black {
+    color: #1E1E1E;
+}
+.term-red {
+    color: #CD3131;
+}
+.term-green {
+    color: #0DBC79;
+}
+.term-yellow {
+    color: #E5E510;
+}
+.term-blue {
+    color: #2472C8;
+}
+.term-magenta {
+    color: #BC3FBC;
+}
+.term-cyan {
+    color: #11A8CD;
+}
+.term-white {
+    color: #E5E5E5;
+}
+

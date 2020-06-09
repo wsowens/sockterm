@@ -1,4 +1,5 @@
-module Color exposing (Format, Color, parseANSI, parseANSIwithError, defaultFormat)
+module ANSI exposing
+  ( Format, defaultFormat, format, Color(..), Buffer, parseEscaped)
 import Html
 import Html.Attributes as Attributes
 
@@ -6,7 +7,7 @@ import Parser exposing (..)
 import Set
 import Debug
 
-{- 
+{-
   token from a stream of data with ANSI escape values
   See: https://en.wikipedia.org/wiki/ANSI_escape_code
   (Note, only the SGR command is supported)
@@ -15,9 +16,15 @@ type AnsiToken
   = Content String  -- a normal bit of text to be formatted
   | SGR (List Int)  -- 'set graphics rendition'
 
---the CSI command, ESC + [
+
+
+-- PARSERS
+
+{- The CSI command, ESC + [ -}
 csi = '\u{001b}'
 
+
+{- For parsing non-escaped, regular content -}
 content : Parser AnsiToken
 content =
   succeed Content
@@ -27,7 +34,8 @@ content =
     , reserved = Set.empty
     }
 
--- may need to remake this to support better error messages
+
+{- For parsing the parameters of an SGR command, i.e. "\u{001b}[4;31m" -}
 sgr : Parser AnsiToken
 sgr =
   succeed SGR
@@ -35,11 +43,13 @@ sgr =
     { start = "\u{001b}["
     , separator = ";"
     , end = "m"
-    , spaces = succeed ()
+    , spaces = succeed () -- no characters are considered 'spaces'
     , item = int
     , trailing = Forbidden
     }
 
+
+{- complete parser for a stream of ANSI tokens -}
 ansiToken : Parser (List AnsiToken)
 ansiToken =
   sequence
@@ -51,10 +61,12 @@ ansiToken =
   , trailing = Optional
   }
 
-run = Parser.run
-test = "\u{001b}[31mmeme\u{001b}[0m"
+-- FORMATTING
 
-
+{-| Struct representing the Format state of a terminal emulator. This struct
+stores the foreground, background, and several decoration attributes (bold,
+italics, underline, etc.)
+-}
 type alias Format =
   { foreground : Color
   , background : Color
@@ -66,8 +78,10 @@ type alias Format =
   , reverse : Bool
   }
 
+
+{- The default Format for text. -}
 defaultFormat : Format
-defaultFormat = 
+defaultFormat =
   { foreground = Default
   , background = Default
   , bold = False
@@ -78,7 +92,13 @@ defaultFormat =
   , reverse = False
   }
 
+
+{-| Type representing the color of text.
+Currently, the basic 8 colors are supported (for SGR codes 30-37 and 40-47) as
+well as the 8 nonstandard bright colors (for SGR codes 90-97 and 100-107).
+-}
 type Color
+  -- basic colors
   = Black
   | Red
   | Green
@@ -88,6 +108,7 @@ type Color
   | Cyan
   | White
   | Default
+  -- nonstandard bright colors
   | BrightBlack
   | BrightRed
   | BrightGreen
@@ -97,10 +118,57 @@ type Color
   | BrightCyan
   | BrightWhite
 
-type ColorType
-  = Background
-  | Foreground
+{- Apply a format to a string of content, producing an HTML node. -}
+format : Format -> String -> Html.Html msg
+format fmt cntnt =
+  let
+    (foreground, background) =
+      if fmt.reverse then
+        -- reverse colors if fmt.reverse flag is enabled
+        ( colorAttr fmt.background Foreground,
+          colorAttr fmt.foreground Background)
+      else
+        ( colorAttr fmt.foreground Foreground,
+          colorAttr fmt.background Background)
+    attributes = []
+      |> (::) foreground
+      |> (::) background
+      |> (++) (decorationAttr fmt)
+      |> List.filterMap identity
+  in
+  Html.span attributes [Html.text cntnt]
 
+
+{-| Extract a list of CSS classes based on a Format's decoration attributes. -}
+decorationAttr : Format -> List (Maybe (Html.Attribute msg))
+decorationAttr fmt =
+  {-
+    Both underline and strikethrough rely on the 'text-decoration' CSS property.
+    So we have to handle these as a special case.
+  -}
+  if fmt.strike && fmt.underline
+  then
+    [ Just (Attributes.class "term-underline-strike") ]
+    |> (::) ( maybeIf fmt.bold (Attributes.class "term-bold") )
+    |> (::) ( maybeIf fmt.italic (Attributes.class "term-italic") )
+    |> (::) ( maybeIf fmt.blink (Attributes.class "term-blink") )
+    |> (::) ( maybeIf fmt.reverse (Attributes.class "term-reverse") )
+  else
+    []
+    |> (::) ( maybeIf fmt.bold (Attributes.class "term-bold") )
+    |> (::) ( maybeIf fmt.italic (Attributes.class "term-italic") )
+    |> (::) ( maybeIf fmt.underline (Attributes.class "term-underline") )
+    |> (::) ( maybeIf fmt.blink (Attributes.class "term-blink") )
+    |> (::) ( maybeIf fmt.reverse (Attributes.class "term-reverse") )
+    |> (::) ( maybeIf fmt.strike (Attributes.class "term-strike") )
+
+maybeIf : Bool -> item -> Maybe item
+maybeIf condition item = if condition then Just item else Nothing
+
+
+{-| Get a string representation of a Color. (This used for assigning CSS
+classes to formatted HTML.
+-}
 colorName : Color -> Maybe String
 colorName color =
   case color of
@@ -124,73 +192,41 @@ colorName color =
     BrightWhite   -> Just "bright-white"
     _ -> Nothing
 
-colorAttr : Color -> ColorType -> Maybe (Html.Attribute msg)
+
+{-| Generate the correct Html attribute for text of this color. -}
+colorAttr : Color -> ScenePart -> Maybe (Html.Attribute msg)
 colorAttr color cType =
   -- is there a simple string representation?
   -- TODO: handle backgrounds
   case (colorName color) of
-    Just str -> 
+    Just str ->
       case cType of
         Foreground -> Just <| Attributes.class ("term-" ++ str)
         Background -> Just <| Attributes.class ("term-" ++ str ++ "-bg")
     Nothing -> Nothing
 
-format : Format -> String -> Html.Html msg
-format fmt cntnt =
-  let
-    (foreground, background) = 
-      if fmt.reverse then 
-        ( colorAttr fmt.background Foreground, 
-          colorAttr fmt.foreground Background)
-      else
-        ( colorAttr fmt.foreground Foreground, 
-          colorAttr fmt.background Background)
-    attributes = []
-      |> (::) foreground
-      |> (::) background
-      |> (++) (decorationAttr fmt)
-      |> List.filterMap identity
-  in
-  Html.span attributes [Html.text cntnt]
+{-| A simple type for background / foreground, used in function above -}
+type ScenePart
+  = Background
+  | Foreground
 
-{- 
-  Extract the CSS classes based on the decoration attributes.
-  All of this confusion occurs because both underline and strikethrough
-  rely on the 'text-decoration' CSS property. If a bit of text
-  is both underlined and crossed out, then applying the .term-underline
-  and .term-strike classes would cause them to be overwritten.
+
+-- PROCESSING
+
+{-| Update the format based on the given SGR parameter.
+This function contains the core logic of this table:
+https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
 -}
-decorationAttr : Format -> List (Maybe (Html.Attribute msg))
-decorationAttr fmt =
-  if fmt.strike && fmt.underline
-  then
-    [ Just (Attributes.class "term-underline-strike") ]
-    |> (::) ( maybeIf fmt.bold (Attributes.class "term-bold") )
-    |> (::) ( maybeIf fmt.italic (Attributes.class "term-italic") )
-    |> (::) ( maybeIf fmt.blink (Attributes.class "term-blink") )
-    |> (::) ( maybeIf fmt.reverse (Attributes.class "term-reverse") )
-  else
-    []
-    |> (::) ( maybeIf fmt.bold (Attributes.class "term-bold") )
-    |> (::) ( maybeIf fmt.italic (Attributes.class "term-italic") )
-    |> (::) ( maybeIf fmt.underline (Attributes.class "term-underline") )
-    |> (::) ( maybeIf fmt.blink (Attributes.class "term-blink") )
-    |> (::) ( maybeIf fmt.reverse (Attributes.class "term-reverse") )
-    |> (::) ( maybeIf fmt.strike (Attributes.class "term-strike") )
-
-maybeIf : Bool -> item -> Maybe item
-maybeIf condition item = if condition then Just item else Nothing
-
 handleSGR : Int -> Format -> Format
-handleSGR code fmt =
-  case code of
+handleSGR param fmt =
+  case param of
     -- clear decoration
     0 -> defaultFormat
     -- text decoration on
     1 -> { fmt | bold = True }
     3 -> { fmt | italic = True }
     4 -> { fmt | underline = True }
-    {- 
+    {-
       for the sake of simplicity, we don't distinguish
       between slow vs. fast blink
     -}
@@ -245,41 +281,56 @@ handleSGR code fmt =
     106 -> { fmt | background = BrightCyan }
     107 -> { fmt | background = BrightWhite }
     _ -> fmt
-  
+
+{-
+  A Format.Buffer contains a stack of processed HTML nodes and possibly a
+  Format state. If `Nothing` is provided for the format state, then no formats
+  will be stored in the Buffer and all SGR commands will be ignored.
+-}
 type alias Buffer msg =
-  { completed : List (Html.Html msg)
+  { nodes : List (Html.Html msg)
   , format : Maybe Format
   }
 
-handleToken : AnsiToken -> Buffer msg -> Buffer msg
-handleToken token buf =
+
+{-
+  Update Buffer according to a single ANSI token.
+  If content is provided, then content will be formatted and added to the
+  buffer's stack of nodes. If an SGR command is provided, then the Buffer's
+  current format state will be updated.
+-}
+consumeToken : AnsiToken -> Buffer msg -> Buffer msg
+consumeToken token buf =
   case token of
     SGR codes ->
       case buf.format of
         Just fmt ->
-          { buf | format = Just <| Debug.log "sgr: " (List.foldl handleSGR fmt codes) }
+          { buf | format = Just ( List.foldl handleSGR fmt codes ) }
         -- if we aren't doing the format thing, then just ignore the SGR
         Nothing -> buf
     Content cntent ->
         let fmt = Maybe.withDefault defaultFormat buf.format in
-        { buf | completed = (format fmt cntent) :: buf.completed }
+        { buf | nodes = (format fmt cntent) :: buf.nodes }
 
 
-handleTokens : Maybe Format -> List AnsiToken -> (Maybe Format, List (Html.Html msg))
-handleTokens current tokens =
-  let 
-    buf = Buffer [] current 
-    updated = List.foldl handleToken buf tokens
+{-| Process a stream tokens, returning a Buffer with the final format state
+and a list of formatted HTML nodes (in FIFO order).
+-}
+processTokens : Maybe Format -> List AnsiToken -> Buffer msg
+processTokens start_fmt tokens =
+  let start_buf = Buffer [] start_fmt
+      updated_buf = List.foldl consumeToken start_buf tokens
   in
-  (updated.format, List.reverse updated.completed)
+  { updated_buf | nodes = List.reverse updated_buf.nodes }
 
-parseANSI : Maybe Format -> String -> Result (List Parser.DeadEnd) (Maybe Format, List (Html.Html msg))
-parseANSI fmt data =
-  Result.map (handleTokens fmt) (Parser.run ansiToken data)
 
--- parse an ANSI stream and convert any underlying error messages into Html nodes
-parseANSIwithError : Maybe Format -> String -> (Maybe Format, List (Html.Html msg))
-parseANSIwithError fmt data =
-  case (parseANSI fmt data) of
-    Err (deadEnd) -> (fmt , [ Html.text (Parser.deadEndsToString deadEnd) ])
-    Ok value -> value
+{-| Parse and process a stream of ANSI-escaped data.
+Optionally, a starting Format state may be provided.  If `Nothing` is provided,
+all SGR commands will be ignored. (Provide `Just defaultFormat` to enable
+formatting but start with the default Format state.)
+-}
+parseEscaped : Maybe Format -> String -> Buffer msg
+parseEscaped fmt data =
+  case (Parser.run ansiToken data) of
+    Err (deadEnd) -> Buffer [ Html.text (Parser.deadEndsToString deadEnd) ] fmt
+    Ok tokens -> processTokens fmt tokens

@@ -2,18 +2,21 @@ port module Main exposing (..)
 
 import Array
 import Browser
+import Browser.Dom as Dom
 import Html exposing (div, h1, h2, a, textarea, text)
 import Html.Attributes as Attr exposing (class, id)
 import Html.Events as Events
 import Json.Decode as Decode exposing (Decoder)
 import Browser.Navigation as Nav
 import Url
+import Task
 
-import Color
+
+import ANSI exposing (defaultFormat)
 
 -- MAIN
 
-main = 
+main =
   Browser.application
     { init = init
     , view = view
@@ -40,7 +43,7 @@ type alias Model =
   , key : Nav.Key
   , msgs : Array.Array (Html.Html Msg)
   , status : Connection
-  , format : Maybe Color.Format
+  , format : Maybe ANSI.Format
   }
 
 type Connection
@@ -48,10 +51,36 @@ type Connection
   | Connecting
   | Closed
 
+{-| Handle an ANSI-escaped message. Produce a model with an updated list
+of messages and updated format state.
+-}
+processSocketMsg : String -> Model -> Model
+processSocketMsg message model =
+  processBuffer (ANSI.parseEscaped model.format message) model
+
+
+{- Update model according to the contents of an ANSI.Buffer -}
+processBuffer : ANSI.Buffer Msg -> Model -> Model
+processBuffer buf model =
+  let new_msgs = Array.fromList buf.nodes in
+  { model | format = buf.format, msgs = Array.append model.msgs new_msgs }
+
+echoFormat : ANSI.Format
+echoFormat =
+  { defaultFormat | foreground = ANSI.BrightBlack, italic = True }
+
+
+{- Echo a user message in gray and italics. -}
+userEcho : String -> Model -> Model
+userEcho user_msg model =
+  let formatted = ANSI.format echoFormat user_msg in
+  { model | msgs = Array.push formatted model.msgs }
+
+
 -- INIT
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init flags url key =
-  ( Model url key Array.empty Closed (Just Color.defaultFormat), Cmd.none)
+  ( Model url key Array.empty Closed (Just defaultFormat), Cmd.none)
 
 
 -- UPDATE
@@ -63,6 +92,7 @@ type Msg
   | SocketClose String
   | UrlChange Url.Url
   | LinkClick Browser.UrlRequest
+  | Scroll
 
 update: Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -70,35 +100,33 @@ update msg model =
     UserInput s ->
       -- TODO: scroll!
       let usermsg = s ++ "\n" in
-      ( { model | msgs = Array.push (text <| "< " ++ usermsg) model.msgs },
+      ( userEcho usermsg model,
         writeSocket usermsg
-      )     
+      )
     UserConnect address ->
-      ( { model | msgs = Array.push (text <| "Connecting to: [" ++ address ++ "]...\n")  model.msgs, status = Connecting },
-        connectSocket address
+      let
+        updated = userEcho ("Connecting to: [" ++ address ++ "]...\n")  model
+      in
+      ( {updated | status = Connecting }
+      , connectSocket address
       )
     SocketMsg message ->
-      -- TODO: scroll!
-      let
-          (newFormat, msgs) = (Color.parseANSIwithError model.format message)
-          newMsgs = Array.append model.msgs (Array.fromList msgs)
-      in
-      ( { model | msgs = newMsgs, format = newFormat},
-        Cmd.none
+      ( processSocketMsg message model
+      , scrollChat "term-output"
       )
     SocketOpen ->
-      ( { model | msgs = Array.push (text "Connected!\n")  model.msgs, status = Open },
-        Cmd.none
+      ( { model | msgs = Array.push (text "Connected!\n")  model.msgs, status = Open }
+      , Cmd.none
       )
-    SocketClose mesg -> 
+    SocketClose mesg ->
       ( { model | msgs = Array.push (text <| mesg ++ "\n") model.msgs, status = Closed },
         Cmd.none
       )
     LinkClick urlRequest ->
-      case urlRequest of 
+      case urlRequest of
         Browser.Internal url ->
           ( model, Nav.pushUrl model.key (Url.toString url))
-        
+
         Browser.External href ->
           (model, Nav.load href)
 
@@ -106,7 +134,27 @@ update msg model =
       ( {model | url = url }
       , Cmd.none
       )
+    Scroll -> (model, Cmd.none)
 
+{-
+  function for scrolling the terminal down
+  scrolls occurs if terminal is 50% below the bottom
+-}
+scrollChat : String -> Cmd Msg
+scrollChat id =
+  Dom.getViewportOf id
+    |> Task.andThen (\info ->
+      let
+          totalHeight = info.scene.height
+          offset = info.viewport.y
+          height = info.viewport.height
+      in
+      if (totalHeight - offset - height) / height < 0.5 then
+        Dom.setViewportOf id 0 info.scene.height
+      else
+        Task.succeed ()
+    )
+    |> Task.attempt (always Scroll)
 
 -- SUBSCRIPTIONS
 subscriptions _ =
@@ -115,7 +163,7 @@ subscriptions _ =
   , msgSocket SocketMsg
   , closeSocket socketCode
   ]
-  
+
 
 socketCode : Int -> Msg
 socketCode i =
@@ -128,23 +176,23 @@ socketCode i =
 
 -- VIEW
 view : Model -> Browser.Document Msg
-view model = 
+view model =
   { title = "Web Term"
-  , body = 
-    [ div [ id "navbar" ] 
+  , body =
+    [ div [ id "navbar" ]
       [ h1 [class "term-underline-crossedout" ] [text "WebTerm."]
-      ] 
+      ]
     , div [ class "term-outer"]
-      [ div [ class "term" ] 
+      [ div [ class "term" ]
         [ div [ class "term-element"]
-          [ div [id "term-url-bar"] 
+          [ div [id "term-url-bar"]
             [ text "Connected to:"
-            , Html.input [id "term-url-input", Attr.spellcheck False, 
+            , Html.input [id "term-url-input", Attr.spellcheck False,
                 Attr.placeholder "ws://server-domain.com:port", handleTermUrl] []
-            , statusIcon model.status ] 
+            , statusIcon model.status ]
           ]
         , div [ class "term-element", id "term-output"] (Array.toList model.msgs)
-        , textarea [ class "term-element", id "term-input", Attr.spellcheck False, 
+        , textarea [ class "term-element", id "term-input", Attr.spellcheck False,
           Attr.placeholder "Type a command here. Press [Enter] to submit.",
           handleTermInput, Attr.value "" ] []
         ]
@@ -154,7 +202,7 @@ view model =
 
 viewMessages : List String -> List (Html.Html Msg)
 viewMessages msgs =
-  msgs |> List.reverse |> List.map ( (++) "\n" ) |> List.map text 
+  msgs |> List.reverse |> List.map ( (++) "\n" ) |> List.map text
 
 handleTermUrl : Html.Attribute Msg
 handleTermUrl =
@@ -165,7 +213,7 @@ handleTermUrl =
 
 handleTermInput : Html.Attribute Msg
 handleTermInput =
-  eventDecoder 
+  eventDecoder
   |> Decode.andThen checkEnterShift
   |> Decode.map (\v -> ( UserInput v, False) )
   |> Events.stopPropagationOn "keypress"
@@ -197,7 +245,7 @@ type alias Event =
 
 
 eventDecoder : Decoder Event
-eventDecoder = 
+eventDecoder =
   Decode.map2 Event
     (Decode.field "shiftKey" Decode.bool)
     (Decode.field "keyCode" Decode.int)

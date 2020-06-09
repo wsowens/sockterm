@@ -5,7 +5,7 @@
     background-color: #2472C8;
     color: #E5E5E5;
     padding: 0 1%;
-    font-family: 'MS Reference Sans Serif';
+    font-family: monospace;
     font-size: small;
 }
 
@@ -74,14 +74,14 @@
     flex-grow: 1;
 }
 
+
+/* CLASSES FOR ANSI-ESCAPE CODE FORMATTING */
 /* text decoration classes */
 .term-bold { font-weight: bold; }
 .term-italic { font-style: italic; }
 .term-underline { text-decoration: underline; }
 .term-blink { animation: blinking 1s steps(1, end) infinite; }
-@keyframes blinking {
-    50% { opacity: 0; }
-}
+@keyframes blinking { 50% { opacity: 0; } }
 /* in case default is selected, we need to swap these colors */
 .term-reverse {
     background-color: #E5E5E5;

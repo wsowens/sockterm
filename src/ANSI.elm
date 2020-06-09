@@ -1,11 +1,10 @@
 module ANSI exposing
   ( Format, defaultFormat, format, Color(..), Buffer, parseEscaped)
+
 import Html
 import Html.Attributes as Attributes
-
-import Parser exposing (..)
+import Parser exposing (Parser, (|=))
 import Set
-import Debug
 
 {-
   token from a stream of data with ANSI escape values
@@ -20,17 +19,19 @@ type AnsiToken
 
 -- PARSERS
 
+esc = '\u{001b}'
+
 {- The CSI command, ESC + [ -}
-csi = '\u{001b}'
+csi = "\u{001b}["
 
 
 {- For parsing non-escaped, regular content -}
 content : Parser AnsiToken
 content =
-  succeed Content
-  |= variable
-    { start = (/=) csi
-    , inner = (/=) csi
+  Parser.succeed Content
+  |= Parser.variable
+    { start = (/=) esc
+    , inner = (/=) esc
     , reserved = Set.empty
     }
 
@@ -38,31 +39,31 @@ content =
 {- For parsing the parameters of an SGR command, i.e. "\u{001b}[4;31m" -}
 sgr : Parser AnsiToken
 sgr =
-  succeed SGR
-  |= sequence
-    { start = "\u{001b}["
+  Parser.succeed SGR
+  |= Parser.sequence
+    { start = csi
     , separator = ";"
     , end = "m"
-    , spaces = succeed () -- no characters are considered 'spaces'
-    , item = int
-    , trailing = Forbidden
+    , spaces = Parser.succeed () -- no characters are considered 'spaces'
+    , item = Parser.int
+    , trailing = Parser.Forbidden
     }
 
 
 {- complete parser for a stream of ANSI tokens -}
 ansiToken : Parser (List AnsiToken)
 ansiToken =
-  sequence
+  Parser.sequence
   { start = ""
   , separator = ""
   , end = ""
-  , item = oneOf [ sgr, content ]
-  , spaces = succeed ()
-  , trailing = Optional
+  , item = Parser.oneOf [ sgr, content ]
+  , spaces = Parser.succeed ()
+  , trailing = Parser.Optional
   }
 
--- FORMATTING
 
+-- FORMATTING
 {-| Struct representing the Format state of a terminal emulator. This struct
 stores the foreground, background, and several decoration attributes (bold,
 italics, underline, etc.)
@@ -118,7 +119,8 @@ type Color
   | BrightCyan
   | BrightWhite
 
-{- Apply a format to a string of content, producing an HTML node. -}
+
+{-| Apply a format to a string of content, producing an HTML node. -}
 format : Format -> String -> Html.Html msg
 format fmt cntnt =
   let
@@ -213,6 +215,16 @@ type ScenePart
 
 -- PROCESSING
 
+{-| An ANSI.Buffer contains a stack of processed HTML nodes and possibly a
+Format state. If `Nothing` is provided for the format state, then no formats
+ will be stored in the Buffer and all SGR commands will be ignored.
+-}
+type alias Buffer msg =
+  { nodes : List (Html.Html msg)
+  , format : Maybe Format
+  }
+
+
 {-| Update the format based on the given SGR parameter.
 This function contains the core logic of this table:
 https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
@@ -282,22 +294,11 @@ handleSGR param fmt =
     107 -> { fmt | background = BrightWhite }
     _ -> fmt
 
-{-
-  A Format.Buffer contains a stack of processed HTML nodes and possibly a
-  Format state. If `Nothing` is provided for the format state, then no formats
-  will be stored in the Buffer and all SGR commands will be ignored.
--}
-type alias Buffer msg =
-  { nodes : List (Html.Html msg)
-  , format : Maybe Format
-  }
 
-
-{-
-  Update Buffer according to a single ANSI token.
-  If content is provided, then content will be formatted and added to the
-  buffer's stack of nodes. If an SGR command is provided, then the Buffer's
-  current format state will be updated.
+{-| Update Buffer according to a single ANSI token.
+If content is provided, then content will be formatted and added to the
+buffer's stack of nodes. If an SGR command is provided, then the Buffer's
+current format state will be updated.
 -}
 consumeToken : AnsiToken -> Buffer msg -> Buffer msg
 consumeToken token buf =

@@ -7,8 +7,6 @@ import Html exposing (div, h1, h2, a, textarea, text)
 import Html.Attributes as Attr exposing (class, id)
 import Html.Events as Events
 import Json.Decode as Decode exposing (Decoder)
-import Browser.Navigation as Nav
-import Url
 import Task
 
 
@@ -17,13 +15,11 @@ import ANSI exposing (defaultFormat)
 -- MAIN
 
 main =
-  Browser.application
+  Browser.element
     { init = init
     , view = view
     , update = update
     , subscriptions = subscriptions
-    , onUrlChange = UrlChange
-    , onUrlRequest = LinkClick
     }
 
 
@@ -36,13 +32,10 @@ port openSocket : (() -> msg) -> Sub msg
 port msgSocket : (String -> msg) -> Sub msg
 port closeSocket : (Int -> msg) -> Sub msg
 
-
 -- MODEL
 type alias Model =
-  { url : Url.Url
-  , key : Nav.Key
-  , msgs : Array.Array (Html.Html Msg)
-  , status : Connection
+  { status : Connection
+  , log : Array.Array (Html.Html Msg)
   , format : Maybe ANSI.Format
   }
 
@@ -63,24 +56,50 @@ processSocketMsg message model =
 processBuffer : ANSI.Buffer Msg -> Model -> Model
 processBuffer buf model =
   let new_msgs = Array.fromList buf.nodes in
-  { model | format = buf.format, msgs = Array.append model.msgs new_msgs }
+  { model | format = buf.format, log = Array.append model.log new_msgs }
 
+
+{-| Display a formatted string in the terminal emulator. -}
+formatString : ANSI.Format -> String -> Model -> Model
+formatString fmt msg model =
+  let formatted = ANSI.format fmt msg in
+  { model | log = Array.push formatted model.log }
+
+userEcho : String -> Model -> Model
+userEcho = formatString echoFormat
+
+{- The user echo messages are gray and italic. -}
 echoFormat : ANSI.Format
 echoFormat =
   { defaultFormat | foreground = ANSI.BrightBlack, italic = True }
 
 
-{- Echo a user message in gray and italics. -}
-userEcho : String -> Model -> Model
-userEcho user_msg model =
-  let formatted = ANSI.format echoFormat user_msg in
-  { model | msgs = Array.push formatted model.msgs }
+conFormat : ANSI.Format
+conFormat =
+  { defaultFormat | foreground = ANSI.BrightBlue, italic = True }
+
+
+errFormat : ANSI.Format
+errFormat =
+  { defaultFormat | foreground = ANSI.Red, italic = True }
+
+{- Add an error / closing message based on an error close. -}
+closeMessage : Int -> Model -> Model
+closeMessage code model =
+  let
+    err_msg = case code of
+      1015 -> "Host not recognized. (1015)\n"
+      1006 -> "Connection closed. (1006)\n"
+      _ -> "Unknown error. (" ++ (String.fromInt code) ++ ")\n"
+    updated = formatString errFormat err_msg model
+  in
+  { updated | status = Closed }
 
 
 -- INIT
-init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
-init flags url key =
-  ( Model url key Array.empty Closed (Just defaultFormat), Cmd.none)
+init : () -> (Model, Cmd Msg)
+init flags =
+  ( Model Closed Array.empty (Just defaultFormat), Cmd.none)
 
 
 -- UPDATE
@@ -89,25 +108,23 @@ type Msg
   | UserConnect String
   | SocketOpen
   | SocketMsg String
-  | SocketClose String
-  | UrlChange Url.Url
-  | LinkClick Browser.UrlRequest
+  | SocketClose Int
   | Scroll
 
 update: Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     UserInput s ->
-      -- TODO: scroll!
       let usermsg = s ++ "\n" in
-      ( userEcho usermsg model,
-        writeSocket usermsg
+      ( userEcho usermsg model
+      , writeSocket usermsg
       )
     UserConnect address ->
       let
-        updated = userEcho ("Connecting to: [" ++ address ++ "]...\n")  model
+        con_msg = "Connecting to: [" ++ address ++ "]...\n"
+        updated = formatString conFormat con_msg model
       in
-      ( {updated | status = Connecting }
+      ( { updated | status = Connecting }
       , connectSocket address
       )
     SocketMsg message ->
@@ -115,23 +132,12 @@ update msg model =
       , scrollChat "term-output"
       )
     SocketOpen ->
-      ( { model | msgs = Array.push (text "Connected!\n")  model.msgs, status = Open }
+      let updated = formatString conFormat "Connected!\n" model in
+      ( { updated | status = Open }
       , Cmd.none
       )
-    SocketClose mesg ->
-      ( { model | msgs = Array.push (text <| mesg ++ "\n") model.msgs, status = Closed },
-        Cmd.none
-      )
-    LinkClick urlRequest ->
-      case urlRequest of
-        Browser.Internal url ->
-          ( model, Nav.pushUrl model.key (Url.toString url))
-
-        Browser.External href ->
-          (model, Nav.load href)
-
-    UrlChange url ->
-      ( {model | url = url }
+    SocketClose code ->
+      ( closeMessage code model
       , Cmd.none
       )
     Scroll -> (model, Cmd.none)
@@ -145,6 +151,7 @@ scrollChat id =
   Dom.getViewportOf id
     |> Task.andThen (\info ->
       let
+          _ = Debug.log "info" info
           totalHeight = info.scene.height
           offset = info.viewport.y
           height = info.viewport.height
@@ -161,48 +168,36 @@ subscriptions _ =
   Sub.batch
   [ openSocket (always SocketOpen)
   , msgSocket SocketMsg
-  , closeSocket socketCode
+  , closeSocket SocketClose
   ]
 
 
-socketCode : Int -> Msg
-socketCode i =
-  SocketClose (case i of
-    1015 -> "Host not recognized"
-    1006 -> "Connection closed"
-    _ -> "Unknown error " ++ (String.fromInt i)
-  )
-
-
 -- VIEW
-view : Model -> Browser.Document Msg
+view : Model -> Html.Html Msg
 view model =
-  { title = "Web Term"
-  , body =
-    [ div [ id "navbar" ]
-      [ h1 [class "term-underline-crossedout" ] [text "WebTerm."]
-      ]
-    , div [ class "term-outer"]
-      [ div [ class "term" ]
-        [ div [ class "term-element"]
-          [ div [id "term-url-bar"]
-            [ text "Connected to:"
-            , Html.input [id "term-url-input", Attr.spellcheck False,
-                Attr.placeholder "ws://server-domain.com:port", handleTermUrl] []
-            , statusIcon model.status ]
-          ]
-        , div [ class "term-element", id "term-output"] (Array.toList model.msgs)
-        , textarea [ class "term-element", id "term-input", Attr.spellcheck False,
-          Attr.placeholder "Type a command here. Press [Enter] to submit.",
-          handleTermInput, Attr.value "" ] []
+    div [ class "term" ]
+      [ div [ class "term-element"]
+        [ div [id "term-url-bar"]
+          [ text "Connected to:"
+          , Html.input [id "term-url-input", Attr.spellcheck False,
+              Attr.placeholder "ws://server-domain.com:port", handleTermUrl] []
+          , statusIcon model.status ]
         ]
+      , div [ class "term-element", id "term-output"] (Array.toList model.log)
+      , textarea [ class "term-element", id "term-input", Attr.spellcheck False,
+        Attr.placeholder "Type a command here. Press [Enter] to submit.",
+        handleTermInput, Attr.value "" ] []
       ]
-    ]
-  }
 
-viewMessages : List String -> List (Html.Html Msg)
-viewMessages msgs =
-  msgs |> List.reverse |> List.map ( (++) "\n" ) |> List.map text
+statusIcon : Connection -> Html.Html msg
+statusIcon status =
+  case status of
+    Open -> text "[CONNECTED]"
+    Connecting -> text "[CONNECTING...]"
+    Closed ->  text "[CLOSED]"
+
+
+-- EVENT HANDLERS
 
 handleTermUrl : Html.Attribute Msg
 handleTermUrl =
@@ -210,6 +205,7 @@ handleTermUrl =
   |> Decode.andThen checkEnter
   |> Decode.map (\v -> (UserConnect v, False) )
   |> Events.stopPropagationOn "keypress"
+
 
 handleTermInput : Html.Attribute Msg
 handleTermInput =
@@ -249,10 +245,3 @@ eventDecoder =
   Decode.map2 Event
     (Decode.field "shiftKey" Decode.bool)
     (Decode.field "keyCode" Decode.int)
-
-statusIcon : Connection -> Html.Html msg
-statusIcon s =
-  case s of
-    Open -> text "[CONNECTED]"
-    Connecting -> text "CONNECTING..."
-    Closed ->  text "[CLOSED]"

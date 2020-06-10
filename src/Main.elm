@@ -27,6 +27,7 @@ main =
 
 port connectSocket : String -> Cmd msg
 port writeSocket : String -> Cmd msg
+port scrollTerm : String -> Cmd msg
 
 port openSocket : (() -> msg) -> Sub msg
 port msgSocket : (String -> msg) -> Sub msg
@@ -109,7 +110,6 @@ type Msg
   | SocketOpen
   | SocketMsg String
   | SocketClose Int
-  | Scroll
 
 update: Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -117,7 +117,7 @@ update msg model =
     UserInput s ->
       let usermsg = s ++ "\n" in
       ( userEcho usermsg model
-      , writeSocket usermsg
+      , Cmd.batch [ scrollTerm "term-output", writeSocket usermsg ]
       )
     UserConnect address ->
       let
@@ -125,11 +125,11 @@ update msg model =
         updated = formatString conFormat con_msg model
       in
       ( { updated | status = Connecting }
-      , connectSocket address
+      , Cmd.batch [ scrollTerm "term-output", connectSocket address ]
       )
     SocketMsg message ->
       ( processSocketMsg message model
-      , scrollChat "term-output"
+      , scrollTerm "term-output"
       )
     SocketOpen ->
       let updated = formatString conFormat "Connected!\n" model in
@@ -140,28 +140,7 @@ update msg model =
       ( closeMessage code model
       , Cmd.none
       )
-    Scroll -> (model, Cmd.none)
 
-{-
-  function for scrolling the terminal down
-  scrolls occurs if terminal is 50% below the bottom
--}
-scrollChat : String -> Cmd Msg
-scrollChat id =
-  Dom.getViewportOf id
-    |> Task.andThen (\info ->
-      let
-          _ = Debug.log "info" info
-          totalHeight = info.scene.height
-          offset = info.viewport.y
-          height = info.viewport.height
-      in
-      if (totalHeight - offset - height) / height < 0.5 then
-        Dom.setViewportOf id 0 info.scene.height
-      else
-        Task.succeed ()
-    )
-    |> Task.attempt (always Scroll)
 
 -- SUBSCRIPTIONS
 subscriptions _ =

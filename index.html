@@ -65,6 +65,22 @@
       // TODO: handle this specifically
       // maybe use the "error" port?
     });
+
+    
+    app.ports.scrollTerm.subscribe((elementId) => {
+      var elem = document.getElementById(elementId);
+      if (elem === null) {
+        console.err("Could not scroll " + elementId)
+        return;
+      }
+      // we have a slight delay to allow the DOM to update
+      setTimeout(()=> {
+        /* Check if the window is less than 50% of the way from the bottom. */
+        if ((elem.scrollHeight - elem.scrollTop - elem.clientHeight) / elem.clientHeight < 0.5) {
+          elem.scroll(0, elem.scrollHeight)
+        }
+      }, 50)
+    });
   </script>
 </body>
 </html>

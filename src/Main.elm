@@ -8,9 +8,9 @@ import Html.Attributes as Attr exposing (class, id)
 import Html.Events as Events
 import Json.Decode as Decode exposing (Decoder)
 import Task
-
-
-import ANSI exposing (defaultFormat)
+-- import packages from wsowens/Term
+import Term exposing (Term)
+import Term.ANSI as ANSI exposing (defaultFormat)
 
 -- MAIN
 
@@ -24,7 +24,23 @@ main =
 
 
 -- PORTS
+{- For this Elm application to work, we need to communicate with JS via Ports.
+This means that you must write functions for all of these ports on the JS side.
+(See 'sockets.js' as an example.)
+On the Elm side, notice that all incoming communication uses Subscriptions,
+while the outgoing communication uses Commands.
 
+connectSocket is a Cmd to open a new websocket. Upon successful oppening, a
+message comes from the openSocket subscription.
+writeSocket is the Cmd to write outgoing data to the websocket. msgSocket is a
+subscription that captures messages incoming from the websocket.
+closeSocket is a subscription that captures error codes if the websocket is
+closed (or fails to open).
+
+scrollTerm is a special Cmd that calls some JavaScript to automatically scroll
+the term down if a new message is received. (We issue this command after
+most update loops.
+-}
 port connectSocket : String -> Cmd msg
 port writeSocket : String -> Cmd msg
 port scrollTerm : String -> Cmd msg
@@ -35,73 +51,60 @@ port closeSocket : (Int -> msg) -> Sub msg
 
 -- MODEL
 type alias Model =
-  { status : Connection
-  , log : Array.Array (Html.Html Msg)
-  , format : Maybe ANSI.Format
+  { term : Term Msg
   }
 
-type Connection
-  = Open
-  | Connecting
-  | Closed
-
-{-| Handle an ANSI-escaped message. Produce a model with an updated list
-of messages and updated format state.
+{- Convenience function to display a formatted string in the terminal emulator.
 -}
-processSocketMsg : String -> Model -> Model
-processSocketMsg message model =
-  processBuffer (ANSI.parseEscaped model.format message) model
-
-
-{- Update model according to the contents of an ANSI.Buffer -}
-processBuffer : ANSI.Buffer Msg -> Model -> Model
-processBuffer buf model =
-  let new_msgs = Array.fromList buf.nodes in
-  { model | format = buf.format, log = Array.append model.log new_msgs }
-
-
-{-| Display a formatted string in the terminal emulator. -}
-formatString : ANSI.Format -> String -> Model -> Model
-formatString fmt msg model =
+printFmt : ANSI.Format -> String -> Term msg -> Term msg
+printFmt fmt msg term =
   let formatted = ANSI.format fmt msg in
-  { model | log = Array.push formatted model.log }
+  { term | log = Array.push formatted term.log }
 
-userEcho : String -> Model -> Model
-userEcho = formatString echoFormat
+userEcho : String -> Term msg -> Term msg
+userEcho = printFmt echoFormat
 
 {- The user echo messages are gray and italic. -}
 echoFormat : ANSI.Format
 echoFormat =
   { defaultFormat | foreground = ANSI.BrightBlack, italic = True }
 
-
+{- Connection messages are blue and italic. -}
 conFormat : ANSI.Format
 conFormat =
   { defaultFormat | foreground = ANSI.BrightBlue, italic = True }
 
-
+{- Error messages are red and italic. -}
 errFormat : ANSI.Format
 errFormat =
   { defaultFormat | foreground = ANSI.Red, italic = True }
 
 {- Add an error / closing message based on an error close. -}
-closeMessage : Int -> Model -> Model
-closeMessage code model =
+closeMessage : Int -> Term msg -> Term msg
+closeMessage code term =
   let
     err_msg = case code of
       1015 -> "Host not recognized. (1015)\n"
       1006 -> "Connection closed. (1006)\n"
       _ -> "Unknown error. (" ++ (String.fromInt code) ++ ")\n"
-    updated = formatString errFormat err_msg model
+    updated = printFmt errFormat err_msg term
   in
-  { updated | status = Closed }
+  { updated | status = Just Term.Closed }
 
 
 -- INIT
 init : () -> (Model, Cmd Msg)
 init flags =
-  ( Model Closed Array.empty (Just defaultFormat), Cmd.none)
+  ( Model newTerm , Cmd.none)
 
+{-
+A new term uses the default formatting. A user's input from the input box
+is captured as a UserInput Msg. The URL submitted from the URL bar is captured
+as a UserConnect Msg.
+-}
+newTerm : Term Msg
+newTerm =
+  (Term.new (Just Term.Closed) (Just defaultFormat) UserInput UserConnect)
 
 -- UPDATE
 type Msg
@@ -111,34 +114,46 @@ type Msg
   | SocketMsg String
   | SocketClose Int
 
+--TODO: consider making terminal scrolling automatic?
 update: Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     UserInput s ->
       let usermsg = s ++ "\n" in
-      ( userEcho usermsg model
+      ( { model | term = userEcho usermsg model.term }
       , Cmd.batch [ scrollTerm "term-output", writeSocket usermsg ]
       )
     UserConnect address ->
       let
         con_msg = "Connecting to: [" ++ address ++ "]...\n"
-        updated = formatString conFormat con_msg model
+        updated = printFmt conFormat con_msg model.term
       in
-      ( { updated | status = Connecting }
+      ( { model | term = updated }
       , Cmd.batch [ scrollTerm "term-output", connectSocket address ]
       )
     SocketMsg message ->
-      ( processSocketMsg message model
+      ( { model | term = Term.receive message model.term }
       , scrollTerm "term-output"
       )
     SocketOpen ->
-      let updated = formatString conFormat "Connected!\n" model in
-      ( { updated | status = Open }
-      , Cmd.none
+      let
+        with_msg = printFmt conFormat "Connected!\n" model.term
+        updated =
+          case (Maybe.withDefault Term.Closed model.term.status) of
+          Term.Connecting addr ->
+            {with_msg | status = Just (Term.Open addr) }
+          -- invalid state!
+          _ -> model.term
+      in
+      ( { model | term = updated }
+      , scrollTerm "term-output"
       )
     SocketClose code ->
-      ( closeMessage code model
-      , Cmd.none
+      let
+        updated = closeMessage code model.term
+      in
+      ( { model | term = updated }
+      , scrollTerm "term-output"
       )
 
 
@@ -154,73 +169,4 @@ subscriptions _ =
 -- VIEW
 view : Model -> Html.Html Msg
 view model =
-    div [ class "term" ]
-      [ div [ class "term-element"]
-        [ div [id "term-url-bar"]
-          [ text "Connected to:"
-          , Html.input [id "term-url-input", Attr.spellcheck False,
-              Attr.placeholder "ws://server-domain.com:port", handleTermUrl] []
-          , statusIcon model.status ]
-        ]
-      , div [ class "term-element", id "term-output"] (Array.toList model.log)
-      , textarea [ class "term-element", id "term-input", Attr.spellcheck False,
-        Attr.placeholder "Type a command here. Press [Enter] to submit.",
-        handleTermInput, Attr.value "" ] []
-      ]
-
-statusIcon : Connection -> Html.Html msg
-statusIcon status =
-  case status of
-    Open -> text "[CONNECTED]"
-    Connecting -> text "[CONNECTING...]"
-    Closed ->  text "[CLOSED]"
-
-
--- EVENT HANDLERS
-
-handleTermUrl : Html.Attribute Msg
-handleTermUrl =
-  eventDecoder
-  |> Decode.andThen checkEnter
-  |> Decode.map (\v -> (UserConnect v, False) )
-  |> Events.stopPropagationOn "keypress"
-
-
-handleTermInput : Html.Attribute Msg
-handleTermInput =
-  eventDecoder
-  |> Decode.andThen checkEnterShift
-  |> Decode.map (\v -> ( UserInput v, False) )
-  |> Events.stopPropagationOn "keypress"
-
-
-checkEnterShift: Event -> Decoder String
-checkEnterShift e =
-  if e.key == 13 then
-    if e.shift then
-      Decode.fail "Shift key pressed with enter"
-    else
-      Events.targetValue
-  else
-    Decode.fail "Shift key pressed with enter"
-
-
-checkEnter: Event -> Decoder String
-checkEnter e =
-  if e.key == 13 then
-    Events.targetValue
-  else
-    Decode.fail "Shift key pressed with enter"
-
-
-type alias Event =
-  { shift : Bool
-  , key : Int
-  }
-
-
-eventDecoder : Decoder Event
-eventDecoder =
-  Decode.map2 Event
-    (Decode.field "shiftKey" Decode.bool)
-    (Decode.field "keyCode" Decode.int)
+  Term.render model.term

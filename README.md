@@ -65,5 +65,14 @@ The compiled scripts will be placed in `./build/`.
 If you have `uglify-js` installed, you can minify the code by running `make minified`.
 The minified scripts will be placed in `./build/min/`.
 
+## About
+This library makes heavy use of `Elm`, the delightful functional programming langauge.
+All of the HTML rendering, ANSI escape code parsing, user input handling happens in Elm.
+Check out [term package](https://github.com/wsowens/term.git) for more details on how this was implemented.
+
+Unfortunately, Elm packages cannot interact with WebSockets without the use of Ports and a bit of boilerplate JavaScript.
+This repo includes a simple Elm application based on the `term` package, with all the proper ports and boilerplate code.
+This all compiles down to a simple JavaScript file. (About 16KB once minified and gzipped!)
+
 ## License
 This project is licensed under the Apache 2.0 License. See the [license](./LICENSE) for details.

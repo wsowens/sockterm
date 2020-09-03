@@ -119,7 +119,7 @@ as a UserConnect Msg.
 -}
 newTerm : Term Msg
 newTerm =
-  (Term.new (Just Term.Closed) (Just defaultFormat) UserInput UserConnect)
+  (Term.new (Just Term.Closed) (Just defaultFormat) UserConnect UserInput)
 
 -- UPDATE
 type Msg
@@ -141,7 +141,8 @@ update msg model =
     UserConnect address ->
       let
         con_msg = "Connecting to: [" ++ address ++ "]...\n"
-        updated = printFmt conFormat con_msg model.term
+        with_msg = printFmt conFormat con_msg model.term
+        updated = { with_msg | status = Just (Term.Connecting address)}
       in
       ( { model | term = updated }
       , Cmd.batch [ scrollTerm "term-output", connectSocket address ]

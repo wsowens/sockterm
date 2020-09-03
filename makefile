@@ -6,8 +6,8 @@ clean:
 
 # for quickly debugging
 test:
-	elm make src/Main.elm --output="wsterm-core.js"
-	cat wsterm-core.js src/sockets.js > wsterm.js
+	elm make src/Main.elm --output="build/wsterm-core.js"
+	cat build/wsterm-core.js src/sockets.js > build/wsterm.js
 
 # the main Elm application + socket code
 build/wsterm.js:

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/gh/wsowens/wsterm@1.0.2/dist/wsterm-element.min.js" type="application/javascript"></script>
+  <style>
+    body {
+      /* using Bliss for that comfy XP vibe */
+      background-image: url(https://i.imgur.com/VvNhMb0.jpg);
+      background-size: 100% auto;
+    }
+    main {
+      display: flex;
+      flex-direction: column;
+      width: 50%;
+      margin: auto 25%;
+      align-items: center;
+      text-align: center;
+    }
+    h1 {
+      font-family: monospace;
+      background-color: #111111;
+      color: #00AA00;
+    }
+    h2 {
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <!-- I tried to make this as easy as possible...-->
+  <main>
+    <h1 style="width: 8em; display">wsterm 💻</h1>
+    <h2 style="font-style: italic;">Connect to WebSocket servers like it's 1979!</h2>
+    <ws-term></ws-term>
+  </main>
+</body>
+</html>

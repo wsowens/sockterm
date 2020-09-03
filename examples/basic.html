@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Load the wsterm.js library from jsdelivr -->
+  <script src="https://cdn.jsdelivr.net/gh/wsowens/wsterm@1.0.2/dist/wsterm-element.min.js" type="application/javascript"></script>
+  <!-- Load the required CSS. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wsowens/wsterm@1.0.2/dist/wsterm.min.css">
+</head>
+<body>
+  <div id="foo"></div>
+  <script>
+    var app = Elm.Main.init({
+      node: document.getElementById('foo')
+    });
+    // create the websocket and initialize the ports
+    initializeSocketPorts(app);
+  </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+/*
+The CSS in this file is based off of wsterm.css, which you
+can find in the main src folder on GitHub:
+https://github.com/wsowens/wsterm/blob/master/src/wsterm.css
+
+In this file, we basically remap all of the colors (which is 
+what many terminal emulators do.)
+You can tweak other classes like .term-bold, .term-italic,
+etc. to change their behavior if you want.
+
+*/
+
+/* change the background colors for the output / input areas */
+
+#term-input, #term-output {
+    color: #839496;
+    background-color: #073642; /* Base02 */
+    white-space: pre-wrap; /*wrap-lines, but preserve lines and spaces/tabs */
+}
+
+
+/* CLASSES FOR ANSI-ESCAPE CODE FORMATTING */
+/* text decoration classes */
+.term-bold { font-weight: bold; }
+.term-italic { font-style: italic; }
+.term-underline { text-decoration: underline; }
+.term-blink { animation: blinking 1s steps(1, end) infinite; }
+@keyframes blinking { 50% { opacity: 0; } }
+/* in case default is selected, we need to swap these colors */
+.term-reverse {
+    background-color: #E5E5E5;
+    color: #1E1E1E;
+}
+.term-strike { text-decoration: line-through; }
+/* extra class since term-underline and term-strike cannot stack */
+.term-underline-strike { text-decoration: underline line-through; }
+
+/* foreground colors */
+.term-black   { color: #073642; } /* black -> base02 */
+.term-red     { color: #dc322f; } 
+.term-green   { color: #859900; }
+.term-yellow  { color: #b58900; }
+.term-blue    { color: #268bd2; }
+.term-magenta { color: #d33682; }
+.term-cyan    { color: #2aa198; }
+.term-white   { color: #eee8d5; }
+.term-bright-black   { color: #839496; } /* this is a bit of a kludge */
+.term-bright-red     { color: #cb4b16; }
+.term-bright-green   { color: #586e75; }
+.term-bright-yellow  { color: #657b83; }
+.term-bright-blue    { color: #839496; }
+.term-bright-magenta { color: #6c71c4; }
+.term-bright-cyan    { color: #93a1a1; }
+.term-bright-white   { color: #fdf6e3; }
+
+/* background colors */
+/* note that the color values are the same, we just use a different CSS attribute */
+.term-black-bg   { background-color: #073642; }
+.term-red-bg     { background-color: #dc322f; }
+.term-green-bg   { background-color: #859900; }
+.term-yellow-bg  { background-color: #b58900; }
+.term-blue-bg    { background-color: #268bd2; }
+.term-magenta-bg { background-color: #d33682; }
+.term-cyan-bg    { background-color: #2aa198; }
+.term-white-bg   { background-color: #eee8d5; }
+.term-bright-black-bg   { background-color:  }
+.term-bright-red-bg     { background-color: #cb4b16; }
+.term-bright-green-bg   { background-color: #586e75; }
+.term-bright-yellow-bg  { background-color: #657b83; }
+.term-bright-blue-bg    { background-color: #839496; }
+.term-bright-magenta-bg { background-color: #6c71c4; }
+.term-bright-cyan-bg    { background-color: #93a1a1; }
+.term-bright-white-bg   { background-color: #fdf6e3; }

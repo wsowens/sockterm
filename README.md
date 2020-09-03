@@ -1,9 +1,11 @@
 # wsterm
 A flexible, easy-to-embed terminal emulator for connecting to WebSockets.
 
-![Screenshot of ws-term in action](./demo.png)
+![Screenshot of wsterm in action](./examples/demo.png)
 
 ## Getting Started
+To see a few examples of using `wsterm`, check out the [examples folder](./examples/).
+
 `wsterm` comes in two flavors. 
 `wsterm-element.js` creates a custom HTML element.
 You can use it like so:
@@ -25,15 +27,18 @@ Note that this may not work on Safari or Opera.
 
 For a bit more control, you can use `wsterm.js`.
 `wsterm.js` requires that you initialize the Elm app and ports yourself.
-Moreover, you must load the pre-defined CSS to get the colorscheme correct.
-**`wsterm.js` won't look right without the CSS!
+Moreover, you ***must*** load the pre-defined CSS to get the colorscheme correct.
+`wsterm.js` won't look or work right without some good CSS!
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <script src="release/wsterm-element.min.js"></script>
-  <link rel="stylesheet" src=">
+  <!-- Load the wsterm.js library from jsdelivr -->
+  <script src="https://cdn.jsdelivr.net/gh/wsowens/wsterm@1.0.2/dist/wsterm-element.min.js" type="application/javascript"></script>
+  <!-- Load the required CSS. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wsowens/wsterm@1.0.2/dist/wsterm.min.css">
+</head>
 </head>
 <body>
   <div id="my-term"></div>
@@ -48,6 +53,9 @@ Moreover, you must load the pre-defined CSS to get the colorscheme correct.
 </body>
 </html>
 ```
+
+The beauty of this approach is that you can define your own colorscheme, if you so choose. See
+the [colorscheme example](./examples/colorscheme.html) for more details.
 
 ## Compiling from Source
 This project requires the Elm compiler.

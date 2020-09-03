@@ -87,7 +87,7 @@ echoFormat =
 {- Connection messages are blue and italic. -}
 conFormat : ANSI.Format
 conFormat =
-  { defaultFormat | foreground = ANSI.BrightBlue, italic = True }
+  { defaultFormat | foreground = ANSI.Blue, italic = True }
 
 {- Error messages are red and italic. -}
 errFormat : ANSI.Format

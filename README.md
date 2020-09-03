@@ -1,6 +1,8 @@
 # wsterm
 A flexible, easy-to-embed terminal emulator for connecting to WebSockets.
 
+![Screenshot of ws-term in action](./demo.png)
+
 ## Getting Started
 `wsterm` comes in two flavors. 
 `wsterm-element.js` creates a custom HTML element.

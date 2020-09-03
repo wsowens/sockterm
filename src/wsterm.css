@@ -6,7 +6,7 @@
     color: #E5E5E5;
     padding: 0 1%;
     font-family: monospace;
-    font-size: small;
+    font-size: medium;
 }
 
 #term-url-input {
@@ -24,6 +24,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
+    text-align: left;
 
     /* allow the user to resize the terminal at will */
     resize: both;

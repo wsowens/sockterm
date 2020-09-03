@@ -2,7 +2,7 @@ default: build/wsterm.js build/wsterm-element.js
 
 clean:
 	rm -rf elm-stuff
-	rm -rf build/*
+	rm -rf build
 
 # for quickly debugging
 test:

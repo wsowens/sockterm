@@ -15,7 +15,7 @@ You can use it like so:
 <head>
   <meta charset="utf-8">
   <!--Load the latest version of sockterm-element"-->
-  <script src="release/sockterm-element.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/wsowens/sockterm/dist/sockterm-element.min.js" type="application/javascript"></script>
 </head>
 <body>
   <!-- Now create a sockterm element. That was easy! -->
@@ -35,9 +35,9 @@ Moreover, you ***must*** load the pre-defined CSS to get the colorscheme correct
 <head>
   <meta charset="utf-8">
   <!-- Load the sockterm.js library from jsdelivr -->
-  <script src="https://cdn.jsdelivr.net/gh/wsowens/sockterm@1.0.2/dist/sockterm-element.min.js" type="application/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/gh/wsowens/sockterm/dist/sockterm.min.js" type="application/javascript"></script>
   <!-- Load the required CSS. -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wsowens/sockterm@1.0.2/dist/sockterm.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wsowens/sockterm/dist/sockterm.min.css">
 </head>
 </head>
 <body>

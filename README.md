@@ -18,8 +18,8 @@ You can use it like so:
   <script src="release/sockterm-element.min.js"></script>
 </head>
 <body>
-  <!-- Now create a ws-term element. That was easy! -->
-  <ws-term></ws-term>
+  <!-- Now create a sockterm element. That was easy! -->
+  <sockterm></sockterm>
 </body>
 </html>
 ```

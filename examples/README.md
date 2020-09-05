@@ -1,9 +1,9 @@
 # Examples
-This folder contains various examples of `wsterm.js` in action.
+This folder contains various examples of `sockterm.js` in action.
 
-- [basic.html](basic.html) Shows how to load `wsterm.js`, initialize the Elm app, and set up the ports corectly.
-- [element.html](element.html) Shows how to load `wsterm-element.js` and use the custom `<wsterm>` element. (*This approach is recommended.*)
-- [colorscheme.html](colorscheme.html) Shows how to create a custom colorscheme. This option is only available with `wsterm.js`, not with custom elements.
+- [basic.html](basic.html) Shows how to load `sockterm.js`, initialize the Elm app, and set up the ports corectly.
+- [element.html](element.html) Shows how to load `sockterm-element.js` and use the custom `<sockterm>` element. (*This approach is recommended.*)
+- [colorscheme.html](colorscheme.html) Shows how to create a custom colorscheme. This option is only available with `sockterm.js`, not with custom elements.
 - [demo.html](demo.html) contains the HTML for the screenshot on the main README.md
 
 

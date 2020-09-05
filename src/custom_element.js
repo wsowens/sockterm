@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Defining a custom element, 'ws-term', that instantiates a websocket terminal
+// Defining a custom element, 'sockterm', that instantiates a websocket terminal
 
-class WSTerm extends HTMLElement {
+class SockTerm extends HTMLElement {
     constructor () {
         super();
 
@@ -43,4 +43,4 @@ class WSTerm extends HTMLElement {
         shadow.appendChild(styleElem);
     }
 }
-customElements.define('ws-term', WSTerm);
+customElements.define('sockterm', SockTerm);

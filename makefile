@@ -1,4 +1,4 @@
-default: build/wsterm.js build/wsterm-element.js
+default: build/sockterm.js build/sockterm-element.js
 
 clean:
 	rm -rf elm-stuff
@@ -6,34 +6,34 @@ clean:
 
 # for quickly debugging
 test:
-	elm make src/Main.elm --output="build/wsterm-core.js"
-	cat build/wsterm-core.js src/sockets.js > build/wsterm.js
+	elm make src/Main.elm --output="build/sockterm-core.js"
+	cat build/sockterm-core.js src/sockets.js > build/sockterm.js
 
 # the main Elm application + socket code
-build/wsterm.js:
+build/sockterm.js:
 	mkdir -p build
-	elm make src/Main.elm --optimize --output="build/wsterm-core.js"
-	cat build/wsterm-core.js src/sockets.js > build/wsterm.js
+	elm make src/Main.elm --optimize --output="build/sockterm-core.js"
+	cat build/sockterm-core.js src/sockets.js > build/sockterm.js
 
 # the main Elm application and socket code, wrapped in a custom-element
-build/wsterm-element.js: build/wsterm.js
-	cat build/wsterm.js src/custom_element.js > build/wsterm-element.js
+build/sockterm-element.js: build/sockterm.js
+	cat build/sockterm.js src/custom_element.js > build/sockterm-element.js
 
-minified: build/min/wsterm.min.js build/min/wsterm-element.min.js build/min/wsterm.min.css
+minified: build/min/sockterm.min.js build/min/sockterm-element.min.js build/min/sockterm.min.css
 
 # minifiers for the 'minified' option
-build/min/wsterm.min.js: build/wsterm.js
+build/min/sockterm.min.js: build/sockterm.js
 	mkdir -p build/min
-	uglifyjs --compress --mangle -- build/wsterm.js > build/min/wsterm.min.js
+	uglifyjs --compress --mangle -- build/sockterm.js > build/min/sockterm.min.js
 
-build/min/wsterm-element.min.js: build/wsterm-element.js
+build/min/sockterm-element.min.js: build/sockterm-element.js
 	mkdir -p build/min
-	uglifyjs --compress --mangle -- build/wsterm-element.js > build/min/wsterm-element.min.js
+	uglifyjs --compress --mangle -- build/sockterm-element.js > build/min/sockterm-element.min.js
 
-build/min/wsterm.min.css:
+build/min/sockterm.min.css:
 	mkdir -p build/min
-	curl -X POST -s --data-urlencode 'input@src/wsterm.css' https://cssminifier.com/raw > build/min/wsterm.min.css
+	curl -X POST -s --data-urlencode 'input@src/sockterm.css' https://cssminifier.com/raw > build/min/sockterm.min.css
 
 release: minified
-	rm -f build/wsterm.tar.gz
-	tar -czf build/wsterm.tar.gz -C build/min wsterm.min.js wsterm-element.min.js wsterm.min.css
+	rm -f build/sockterm.tar.gz
+	tar -czf build/sockterm.tar.gz -C build/min sockterm.min.js sockterm-element.min.js sockterm.min.css

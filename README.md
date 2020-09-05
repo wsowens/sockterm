@@ -1,21 +1,21 @@
-# wsterm
+# sockterm 🧦🖥
 A flexible, easy-to-embed terminal emulator for connecting to WebSockets.
 
-![Screenshot of wsterm in action](./examples/demo.png)
+![Screenshot of sockterm in action](./examples/demo.png)
 
 ## Getting Started
-To see a few examples of using `wsterm`, check out the [examples folder](./examples/).
+To see a few examples of using `sockterm`, check out the [examples folder](./examples/).
 
-`wsterm` comes in two flavors. 
-`wsterm-element.js` creates a custom HTML element.
+`sockterm` comes in two flavors. 
+`sockterm-element.js` creates a custom HTML element.
 You can use it like so:
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!--Load the latest version of wsterm-element"-->
-  <script src="release/wsterm-element.min.js"></script>
+  <!--Load the latest version of sockterm-element"-->
+  <script src="release/sockterm-element.min.js"></script>
 </head>
 <body>
   <!-- Now create a ws-term element. That was easy! -->
@@ -25,19 +25,19 @@ You can use it like so:
 ```
 Note that this may not work on Safari or Opera.
 
-For a bit more control, you can use `wsterm.js`.
-`wsterm.js` requires that you initialize the Elm app and ports yourself.
+For a bit more control, you can use `sockterm.js`.
+`sockterm.js` requires that you initialize the Elm app and ports yourself.
 Moreover, you ***must*** load the pre-defined CSS to get the colorscheme correct.
-`wsterm.js` won't look or work right without some good CSS!
+`sockterm.js` won't look or work right without some good CSS!
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Load the wsterm.js library from jsdelivr -->
-  <script src="https://cdn.jsdelivr.net/gh/wsowens/wsterm@1.0.2/dist/wsterm-element.min.js" type="application/javascript"></script>
+  <!-- Load the sockterm.js library from jsdelivr -->
+  <script src="https://cdn.jsdelivr.net/gh/wsowens/sockterm@1.0.2/dist/sockterm-element.min.js" type="application/javascript"></script>
   <!-- Load the required CSS. -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wsowens/wsterm@1.0.2/dist/wsterm.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wsowens/sockterm@1.0.2/dist/sockterm.min.css">
 </head>
 </head>
 <body>
@@ -68,7 +68,7 @@ If you want to use these features, you can install [uglify-es](https://www.npmjs
 npm install uglify-es -g
 ```
 
-To compile the basic `wsterm.js` and `wsterm-element.js` scripts, you can simply run `make wsterm.js`.
+To compile the basic `sockterm.js` and `sockterm-element.js` scripts, you can simply run `make sockterm.js`.
 (If you don't have `make` on your system, you can simply copy the commands from the [makefile](./makefile))
 The compiled scripts will be placed in `./build/`.
 

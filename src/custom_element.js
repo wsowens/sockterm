@@ -43,4 +43,4 @@ class SockTerm extends HTMLElement {
         shadow.appendChild(styleElem);
     }
 }
-customElements.define('sockterm', SockTerm);
+customElements.define('sock-term', SockTerm);

@@ -19,7 +19,7 @@ You can use it like so:
 </head>
 <body>
   <!-- Now create a sockterm element. That was easy! -->
-  <sockterm></sockterm>
+  <sock-term></sock-term>
 </body>
 </html>
 ```

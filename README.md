@@ -78,7 +78,7 @@ The minified scripts will be placed in `./build/min/`.
 ## About
 This library makes heavy use of `Elm`, the delightful functional programming langauge.
 All of the HTML rendering, ANSI escape code parsing, user input handling happens in Elm.
-Check out [term package](https://github.com/wsowens/term.git) for more details on how this was implemented.
+Check out the [term package](https://github.com/wsowens/term.git) for more details on how this was implemented.
 
 Unfortunately, Elm packages cannot interact with WebSockets without the use of Ports and a bit of boilerplate JavaScript.
 This repo includes a simple Elm application based on the `term` package, with all the proper ports and boilerplate code.

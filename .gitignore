@@ -1,2 +1,6 @@
+# elm's build environment
 elm-stuff/*
+# compiled files
 build/*
+# python virtual environment
+*env/*
